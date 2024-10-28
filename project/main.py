@@ -2,9 +2,11 @@ import customtkinter
 from customtkinter import *
 from PIL import Image
 from tkinter import messagebox
+from tkinter import Toplevel, StringVar
 
-ADMIN_EMAIL = "admin@gmail.com"
-ADMIN_PASSWORD = "12345"
+
+ADMIN_EMAIL = "admin"
+ADMIN_PASSWORD = "pass"
 
 class StockManagementApp:
     def __init__(self):
@@ -48,7 +50,7 @@ class StockManagementApp:
 
         #password
         CTkLabel(master=self.frame, text="    Password:", text_color="#9A4220", anchor="w", font=h2_font).pack(anchor="w", pady=(30, 0), padx=(25, 0))
-        self.password_entry = CTkEntry(master=self.frame, width=400, fg_color="#EEEEEE", border_color="#601E88", border_width=1, text_color="#000000")
+        self.password_entry = CTkEntry(master=self.frame, width=400,show="*", fg_color="#EEEEEE", border_color="#601E88", border_width=1, text_color="#000000")
         self.password_entry.pack(anchor="w", padx=(47, 0))
 
         #login button

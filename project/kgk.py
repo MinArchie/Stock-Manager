@@ -1,8 +1,7 @@
 import customtkinter as ctk
 from customtkinter import *
 from PIL import Image
-from tkinter import messagebox
-from tkinter import Toplevel, StringVar
+from tkinter import messagebox, simpledialog
 import mysql.connector
 from mysql.connector import Error
 
@@ -17,7 +16,7 @@ class StockManagementApp:
                 host='localhost',
                 database='StockManagementDB',
                 user='root',
-                password='******'  # Replace with your actual password
+                password='rkp@2005'  # Replace with your actual password
             )
 
             if self.db_connection.is_connected():
@@ -115,7 +114,7 @@ class StockManagementApp:
 
         buttons = [
             ("Dashboard", self.show_dashboard),
-            ("Orders", self.show_orders),
+            ("Orders", self.show_assets),
             ("Returns", self.show_returns),
             ("Settings", self.show_settings),
             ("Account", self.show_account)
@@ -144,10 +143,10 @@ class StockManagementApp:
         CTkLabel(self.content_frame, text="Welcome to the Stock Management Dashboard."
                 ).pack(pady=10)
 
-    def show_orders(self):
+    def show_assets(self):
         self.clear_content_frame()
-        self.create_orders_header()
-        self.create_orders_table()
+        self.create_assets_header()
+        self.create_assets_table()
 
     def show_returns(self):
         self.clear_content_frame()
@@ -191,11 +190,11 @@ class StockManagementApp:
         else:
             messagebox.showerror("Login Failed", "Invalid email or password. Please try again.")
 
-    def create_orders_header(self):
-        """Create the orders header and stats section."""
-        orders_label = CTkLabel(self.content_frame, text="Orders", 
+    def create_assets_header(self):
+        """Create the assets header and stats section."""
+        assets_label = CTkLabel(self.content_frame, text="Orders", 
                               font=CTkFont(size=24, weight="bold"))
-        orders_label.pack(pady=(0, 20))
+        assets_label.pack(pady=(0, 20))
 
         # Create a frame for stats
         stats_frame = CTkFrame(self.content_frame)
@@ -208,36 +207,98 @@ class StockManagementApp:
             stat_label.pack(side="left", expand=True, pady=5)
 
         CTkButton(self.content_frame, text="+ New Order", 
-                 width=100, command=self.add_new_order).pack(pady=(0, 20))
+                 width=100, command=self.add_new_asset).pack(pady=(0, 20))
 
-    def create_orders_table(self):
-        """Create the orders table with headers and data"""
-        self.orders_table = CTkFrame(self.content_frame)
-        self.orders_table.pack(fill="x", expand=True)
+    def create_assets_table(self):
+        """Create the assets table."""
+        self.table_frame = CTkFrame(self.content_frame)
+        self.table_frame.pack(fill="both", expand=True)
 
-        # Table headers
-        headers = ["Order ID", "Product", "Quantity", "Status"]
+        # Create header
+        headers = ["Asset ID", "Product Name", "Quantity", "Status"]
         for header in headers:
-            header_label = CTkLabel(self.orders_table, text=header, 
-                                   font=CTkFont(size=14, weight="bold"))
-            header_label.grid(row=0, column=headers.index(header), padx=10, pady=5)
+            label = CTkLabel(self.table_frame, text=header, 
+                             font=CTkFont(size=14, weight="bold"))
+            label.grid(row=0, column=headers.index(header), padx=10, pady=5)
 
-        # Sample order data (this would typically come from a database)
-        sample_orders = [
-            (1, "Product A", 10, "Shipped"),
-            (2, "Product B", 5, "Delivered"),
-            (3, "Product C", 20, "Pending"),
-        ]
+        # Fetch assets from database and populate table
+        self.refresh_assets()
 
-        for order in sample_orders:
-            for item in order:
-                order_label = CTkLabel(self.orders_table, text=str(item))
-                order_label.grid(row=sample_orders.index(order) + 1, column=order.index(item), padx=10, pady=5)
+    def refresh_assets(self):
+        """Fetch assets from database and display in the assets table."""
+        self.clear_assets_table()
+        
+        try:
+            cursor = self.db_connection.cursor()
+            cursor.execute("SELECT * FROM Assets")
+            self.table_data = cursor.fetchall()
+            
+            for row_index, row in enumerate(self.table_data, start=1):
+                for col_index, value in enumerate(row):
+                    label = CTkLabel(self.table_frame, text=value)
+                    label.grid(row=row_index, column=col_index, padx=10, pady=5)
+                    
+        except Error as e:
+            print(f"Error: {e}")
 
-    def add_new_order(self):
-        """Functionality to add a new order"""
-        # Placeholder for adding new order functionality
-        messagebox.showinfo("Add New Order", "Functionality to add new orders will be implemented.")
+    def clear_assets_table(self):
+        """Clear the assets table before refreshing."""
+        for widget in self.table_frame.winfo_children():
+            widget.destroy()
+
+    def add_new_asset(self):
+        """Open a dialog to add a new asset to the database."""
+        # Create a new top-level window
+        self.asset_dialog = CTkToplevel(self.app)
+        self.asset_dialog.title("Add New Asset")
+        self.asset_dialog.geometry("400x400")
+
+        # Create labels and entry fields for each asset attribute
+        CTkLabel(self.asset_dialog, text="Asset Name:").pack(pady=5)
+        self.asset_name_entry = CTkEntry(self.asset_dialog)
+        self.asset_name_entry.pack(pady=5)
+
+        CTkLabel(self.asset_dialog, text="Quantity:").pack(pady=5)
+        self.quantity_entry = CTkEntry(self.asset_dialog)
+        self.quantity_entry.pack(pady=5)
+
+        CTkLabel(self.asset_dialog, text="Status:").pack(pady=5)
+        self.status_entry = CTkEntry(self.asset_dialog)
+        self.status_entry.pack(pady=5)
+
+        # Add more fields as required
+        CTkLabel(self.asset_dialog, text="Description:").pack(pady=5)
+        self.description_entry = CTkEntry(self.asset_dialog)
+        self.description_entry.pack(pady=5)
+
+        # Add button to submit the form
+        CTkButton(self.asset_dialog, text="Add Asset", command=self.submit_asset).pack(pady=20)
+
+    def submit_asset(self):
+        """Submit the asset information to the database."""
+        product_name = self.asset_name_entry.get()
+        quantity = self.quantity_entry.get()
+        status = self.status_entry.get()
+        description = self.description_entry.get()  # Example additional field
+
+        # Validate inputs
+        if product_name and quantity.isdigit() and status:
+            try:
+                cursor = self.db_connection.cursor()
+                cursor.execute(
+                    "INSERT INTO Assets (product_name, quantity, status, description) VALUES (%s, %s, %s, %s)",
+                    (product_name, int(quantity), status, description)  # Assuming quantity is an integer
+                )
+                self.db_connection.commit()
+                messagebox.showinfo("Success", "New asset added successfully!")
+                self.asset_dialog.destroy()  # Close the dialog
+                self.refresh_assets()  # Refresh the asset table to show new asset
+            except Error as e:
+                print(f"Error: {e}")
+                messagebox.showerror("Error", "Failed to add new asset.")
+        else:
+            messagebox.showwarning("Input Error", "All fields must be filled out correctly.")
+
 
 if __name__ == "__main__":
     StockManagementApp()

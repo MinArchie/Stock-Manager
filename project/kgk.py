@@ -17,17 +17,20 @@ class StockManagementApp:
                 host='localhost',
                 database='StockManagementDB',
                 user='root',
-                password='abc@2413'  # Replace with your actual password
+                password="****"  # Replace with your actual password
             )
-
             if self.db_connection.is_connected():
                 print("Successfully connected to the database")
-                
+                db_info = self.db_connection.get_server_info()
+                print(f"MySQL server version: {db_info}")
+
         except Error as e:
             print(f"Error: {e}")
+            messagebox.showerror("Database Error", f"Error connecting to MySQL: {e}")
             return  # Exit if the database connection fails
-
+        print("App starting...")
         self.app = CTk()
+        print("App created...")
         self.app.geometry("856x645")
         self.app.resizable(0, 0)
 

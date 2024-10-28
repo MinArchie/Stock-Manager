@@ -17,7 +17,7 @@ class StockManagementApp:
                 host='localhost',
                 database='StockManagementDB',
                 user='root',
-                password='abc@2413'  # Replace with your actual password
+                password='******'  # Replace with your actual password
             )
 
             if self.db_connection.is_connected():
@@ -115,8 +115,7 @@ class StockManagementApp:
 
         buttons = [
             ("Dashboard", self.show_dashboard),
-            ("Manage Assets", self.show_assets),
-            ("Manage Inventory", self.show_inventory),
+            ("Orders", self.show_orders),
             ("Returns", self.show_returns),
             ("Settings", self.show_settings),
             ("Account", self.show_account)
@@ -145,346 +144,100 @@ class StockManagementApp:
         CTkLabel(self.content_frame, text="Welcome to the Stock Management Dashboard."
                 ).pack(pady=10)
 
-    def show_assets(self):
+    def show_orders(self):
         self.clear_content_frame()
-        CTkLabel(self.content_frame, text="Manage Assets", font=CTkFont(size=24, weight="bold")).pack(pady=(0, 20))
-        CTkButton(self.content_frame, text="Add Asset", command=self.add_asset).pack(pady=(10, 0))
-        self.display_assets()
+        self.create_orders_header()
+        self.create_orders_table()
 
-    def display_assets(self):
-        """Display the assets in a table format"""
-        self.assets_table = CTkFrame(self.content_frame)
-        self.assets_table.pack(fill="x", expand=True)
+    def show_returns(self):
+        self.clear_content_frame()
+        CTkLabel(self.content_frame, text="Returns", 
+                font=CTkFont(size=24, weight="bold")).pack(pady=(0, 20))
+        CTkLabel(self.content_frame, text="Manage returns for your stock."
+                ).pack(pady=10)
+
+    def show_settings(self):
+        self.clear_content_frame()
+        CTkLabel(self.content_frame, text="Settings", 
+                font=CTkFont(size=24, weight="bold")).pack(pady=(0, 20))
+        CTkLabel(self.content_frame, text="Configure your stock management settings."
+                ).pack(pady=10)
+
+    def show_account(self):
+        self.clear_content_frame()
+        CTkLabel(self.content_frame, text="Account", 
+                font=CTkFont(size=24, weight="bold")).pack(pady=(0, 20))
+        CTkButton(
+            self.content_frame,
+            text="Logout",
+            font=("Helvetica", 18, "bold"),
+            width=200,
+            fg_color="#D2502E",
+            hover_color="#B0C3CD",
+            text_color="#ffffff",
+            command=self.logout
+        ).pack(pady=20)
+
+    def logout(self):
+        """Properly handle logout by clearing everything and showing login view"""
+        self.clear_main_content()
+        self.login_view()
+
+    def authenticate(self):
+        email = self.email_entry.get()
+        password = self.password_entry.get()
+        if email == ADMIN_EMAIL and password == ADMIN_PASSWORD:
+            self.homepage()
+        else:
+            messagebox.showerror("Login Failed", "Invalid email or password. Please try again.")
+
+    def create_orders_header(self):
+        """Create the orders header and stats section."""
+        orders_label = CTkLabel(self.content_frame, text="Orders", 
+                              font=CTkFont(size=24, weight="bold"))
+        orders_label.pack(pady=(0, 20))
+
+        # Create a frame for stats
+        stats_frame = CTkFrame(self.content_frame)
+        stats_frame.pack(fill="x", pady=(0, 20))
+
+        stats = {"Orders\n123": 0, "Shipping\n91": 1, "Delivered\n23": 2}
+        for text in stats.keys():
+            stat_label = CTkLabel(stats_frame, text=text, 
+                                font=CTkFont(size=16))
+            stat_label.pack(side="left", expand=True, pady=5)
+
+        CTkButton(self.content_frame, text="+ New Order", 
+                 width=100, command=self.add_new_order).pack(pady=(0, 20))
+
+    def create_orders_table(self):
+        """Create the orders table with headers and data"""
+        self.orders_table = CTkFrame(self.content_frame)
+        self.orders_table.pack(fill="x", expand=True)
 
         # Table headers
-        headers = ["Asset ID", "Name", "Type", "Category", "Quantity", "Market Price", "Actions"]
+        headers = ["Order ID", "Product", "Quantity", "Status"]
         for header in headers:
-            header_label = CTkLabel(self.assets_table, text=header, 
+            header_label = CTkLabel(self.orders_table, text=header, 
                                    font=CTkFont(size=14, weight="bold"))
             header_label.grid(row=0, column=headers.index(header), padx=10, pady=5)
 
-        # Fetch and display assets from the database
-        try:
-            cursor = self.db_connection.cursor()
-            cursor.execute("SELECT * FROM ASSETS")
-            assets = cursor.fetchall()
+        # Sample order data (this would typically come from a database)
+        sample_orders = [
+            (1, "Product A", 10, "Shipped"),
+            (2, "Product B", 5, "Delivered"),
+            (3, "Product C", 20, "Pending"),
+        ]
 
-            for asset in assets:
-                for item in asset[:-1]:  # Exclude last_updated column from display
-                    asset_label = CTkLabel(self.assets_table, text=str(item))
-                    asset_label.grid(row=assets.index(asset) + 1, column=asset.index(item), padx=10, pady=5)
+        for order in sample_orders:
+            for item in order:
+                order_label = CTkLabel(self.orders_table, text=str(item))
+                order_label.grid(row=sample_orders.index(order) + 1, column=order.index(item), padx=10, pady=5)
 
-                # Add action buttons for updating and deleting
-                update_button = CTkButton(self.assets_table, text="Update", command=lambda a_id=asset[0]: self.update_asset(a_id))
-                update_button.grid(row=assets.index(asset) + 1, column=len(asset)-1, padx=10, pady=5)
+    def add_new_order(self):
+        """Functionality to add a new order"""
+        # Placeholder for adding new order functionality
+        messagebox.showinfo("Add New Order", "Functionality to add new orders will be implemented.")
 
-                delete_button = CTkButton(self.assets_table, text="Delete", command=lambda a_id=asset[0]: self.delete_asset(a_id))
-                delete_button.grid(row=assets.index(asset) + 1, column=len(asset), padx=10, pady=5)
-
-        except Error as e:
-            messagebox.showerror("Database Error", f"Error fetching assets: {e}")
-
-    def add_asset(self):
-        """Functionality to add a new asset"""
-        self.asset_window = Toplevel(self.app)
-        self.asset_window.title("Add Asset")
-        self.asset_window.geometry("400x400")
-
-        CTkLabel(self.asset_window, text="Asset Name").pack(pady=5)
-        self.asset_name_entry = CTkEntry(self.asset_window)
-        self.asset_name_entry.pack(pady=5)
-
-        CTkLabel(self.asset_window, text="Asset Type").pack(pady=5)
-        self.asset_type_entry = CTkEntry(self.asset_window)
-        self.asset_type_entry.pack(pady=5)
-
-        CTkLabel(self.asset_window, text="Category").pack(pady=5)
-        self.category_entry = CTkEntry(self.asset_window)
-        self.category_entry.pack(pady=5)
-
-        CTkLabel(self.asset_window, text="Quantity").pack(pady=5)
-        self.quantity_entry = CTkEntry(self.asset_window)
-        self.quantity_entry.pack(pady=5)
-
-        CTkLabel(self.asset_window, text="Market Price").pack(pady=5)
-        self.market_price_entry = CTkEntry(self.asset_window)
-        self.market_price_entry.pack(pady=5)
-
-        CTkButton(self.asset_window, text="Add Asset", command=self.save_asset).pack(pady=20)
-
-    def save_asset(self):
-        """Save the asset to the database"""
-        asset_name = self.asset_name_entry.get()
-        asset_type = self.asset_type_entry.get()
-        category = self.category_entry.get()
-        quantity = int(self.quantity_entry.get())
-        market_price = float(self.market_price_entry.get())
-
-        try:
-            cursor = self.db_connection.cursor()
-            cursor.execute("""
-                INSERT INTO ASSETS (a_name, a_type, category, a_qty, market_price) 
-                VALUES (%s, %s, %s, %s, %s)
-            """, (asset_name, asset_type, category, quantity, market_price))
-            self.db_connection.commit()
-            messagebox.showinfo("Success", "Asset added successfully!")
-            self.asset_window.destroy()
-            self.display_assets()
-        except Error as e:
-            messagebox.showerror("Database Error", f"Error adding asset: {e}")
-
-    def update_asset(self, a_id):
-        """Update asset details"""
-        self.asset_window = Toplevel(self.app)
-        self.asset_window.title("Update Asset")
-        self.asset_window.geometry("400x400")
-
-        # Fetch current asset details
-        cursor = self.db_connection.cursor()
-        cursor.execute("SELECT * FROM ASSETS WHERE a_id = %s", (a_id,))
-        asset = cursor.fetchone()
-
-        CTkLabel(self.asset_window, text="Asset Name").pack(pady=5)
-        self.asset_name_entry = CTkEntry(self.asset_window)
-        self.asset_name_entry.insert(0, asset[1])
-        self.asset_name_entry.pack(pady=5)
-
-        CTkLabel(self.asset_window, text="Asset Type").pack(pady=5)
-        self.asset_type_entry = CTkEntry(self.asset_window)
-        self.asset_type_entry.insert(0, asset[2])
-        self.asset_type_entry.pack(pady=5)
-
-        CTkLabel(self.asset_window, text="Category").pack(pady=5)
-        self.category_entry = CTkEntry(self.asset_window)
-        self.category_entry.insert(0, asset[3])
-        self.category_entry.pack(pady=5)
-
-        CTkLabel(self.asset_window, text="Quantity").pack(pady=5)
-        self.quantity_entry = CTkEntry(self.asset_window)
-        self.quantity_entry.insert(0, asset[4])
-        self.quantity_entry.pack(pady=5)
-
-        CTkLabel(self.asset_window, text="Market Price").pack(pady=5)
-        self.market_price_entry = CTkEntry(self.asset_window)
-        self.market_price_entry.insert(0, asset[5])
-        self.market_price_entry.pack(pady=5)
-
-        CTkButton(self.asset_window, text="Update Asset", command=lambda: self.save_updated_asset(a_id)).pack(pady=20)
-
-    def save_updated_asset(self, a_id):
-        """Save the updated asset to the database"""
-        asset_name = self.asset_name_entry.get()
-        asset_type = self.asset_type_entry.get()
-        category = self.category_entry.get()
-        quantity = int(self.quantity_entry.get())
-        market_price = float(self.market_price_entry.get())
-
-        try:
-            cursor = self.db_connection.cursor()
-            cursor.execute("""
-                UPDATE ASSETS SET a_name = %s, a_type = %s, category = %s, a_qty = %s, market_price = %s 
-                WHERE a_id = %s
-            """, (asset_name, asset_type, category, quantity, market_price, a_id))
-            self.db_connection.commit()
-            messagebox.showinfo("Success", "Asset updated successfully!")
-            self.asset_window.destroy()
-            self.display_assets()
-        except Error as e:
-            messagebox.showerror("Database Error", f"Error updating asset: {e}")
-
-    def delete_asset(self, a_id):
-        """Delete an asset"""
-        if messagebox.askyesno("Confirm Delete", "Are you sure you want to delete this asset?"):
-            try:
-                cursor = self.db_connection.cursor()
-                cursor.execute("DELETE FROM ASSETS WHERE a_id = %s", (a_id,))
-                self.db_connection.commit()
-                messagebox.showinfo("Success", "Asset deleted successfully!")
-                self.display_assets()
-            except Error as e:
-                messagebox.showerror("Database Error", f"Error deleting asset: {e}")
-
-    def show_inventory(self):
-        self.clear_content_frame()
-        CTkLabel(self.content_frame, text="Manage Inventory", font=CTkFont(size=24, weight="bold")).pack(pady=(0, 20))
-        CTkButton(self.content_frame, text="Add Inventory", command=self.add_inventory).pack(pady=(10, 0))
-        self.display_inventory()
-
-    def display_inventory(self):
-        """Display the inventory in a table format"""
-        self.inventory_table = CTkFrame(self.content_frame)
-        self.inventory_table.pack(fill="x", expand=True)
-
-        # Table headers
-        headers = ["Inventory ID", "Asset ID", "Quantity", "Status", "Actions"]
-        for header in headers:
-            header_label = CTkLabel(self.inventory_table, text=header, 
-                                   font=CTkFont(size=14, weight="bold"))
-            header_label.grid(row=0, column=headers.index(header), padx=10, pady=5)
-
-        # Fetch and display inventory from the database
-        try:
-            cursor = self.db_connection.cursor()
-            cursor.execute("SELECT * FROM INVENTORY")
-            inventory = cursor.fetchall()
-
-            for item in inventory:
-                for value in item[:-1]:  # Exclude movement_date column from display
-                    inv_label = CTkLabel(self.inventory_table, text=str(value))
-                    inv_label.grid(row=inventory.index(item) + 1, column=item.index(value), padx=10, pady=5)
-
-                # Add action buttons for updating and deleting
-                update_button = CTkButton(self.inventory_table, text="Update", command=lambda i_id=item[0]: self.update_inventory(i_id))
-                update_button.grid(row=inventory.index(item) + 1, column=len(item)-1, padx=10, pady=5)
-
-                delete_button = CTkButton(self.inventory_table, text="Delete", command=lambda i_id=item[0]: self.delete_inventory(i_id))
-                delete_button.grid(row=inventory.index(item) + 1, column=len(item), padx=10, pady=5)
-
-        except Error as e:
-            messagebox.showerror("Database Error", f"Error fetching inventory: {e}")
-
-    def add_inventory(self):
-        """Functionality to add new inventory"""
-        self.inventory_window = Toplevel(self.app)
-        self.inventory_window.title("Add Inventory")
-        self.inventory_window.geometry("400x400")
-
-        CTkLabel(self.inventory_window, text="Asset ID").pack(pady=5)
-        self.asset_id_entry = CTkEntry(self.inventory_window)
-        self.asset_id_entry.pack(pady=5)
-
-        CTkLabel(self.inventory_window, text="Quantity").pack(pady=5)
-        self.quantity_entry = CTkEntry(self.inventory_window)
-        self.quantity_entry.pack(pady=5)
-
-        CTkLabel(self.inventory_window, text="Status").pack(pady=5)
-        self.status_entry = CTkEntry(self.inventory_window)
-        self.status_entry.pack(pady=5)
-
-        CTkButton(self.inventory_window, text="Add Inventory", command=self.save_inventory).pack(pady=20)
-
-    def save_inventory(self):
-        """Save the inventory item to the database"""
-        asset_id = int(self.asset_id_entry.get())
-        quantity = int(self.quantity_entry.get())
-        status = self.status_entry.get()
-
-        try:
-            cursor = self.db_connection.cursor()
-            cursor.execute("""
-                INSERT INTO INVENTORY (a_id, i_qty, status) 
-                VALUES (%s, %s, %s)
-            """, (asset_id, quantity, status))
-            self.db_connection.commit()
-            messagebox.showinfo("Success", "Inventory added successfully!")
-            self.inventory_window.destroy()
-            self.display_inventory()
-        except Error as e:
-            messagebox.showerror("Database Error", f"Error adding inventory: {e}")
-
-    def update_inventory(self, i_id):
-        """Update inventory details"""
-        self.inventory_window = Toplevel(self.app)
-        self.inventory_window.title("Update Inventory")
-        self.inventory_window.geometry("400x400")
-
-        # Fetch current inventory details
-        cursor = self.db_connection.cursor()
-        cursor.execute("SELECT * FROM INVENTORY WHERE i_id = %s", (i_id,))
-        inventory_item = cursor.fetchone()
-
-        CTkLabel(self.inventory_window, text="Asset ID").pack(pady=5)
-        self.asset_id_entry = CTkEntry(self.inventory_window)
-        self.asset_id_entry.insert(0, inventory_item[2])
-        self.asset_id_entry.pack(pady=5)
-
-        CTkLabel(self.inventory_window, text="Quantity").pack(pady=5)
-        self.quantity_entry = CTkEntry(self.inventory_window)
-        self.quantity_entry.insert(0, inventory_item[1])
-        self.quantity_entry.pack(pady=5)
-
-        CTkLabel(self.inventory_window, text="Status").pack(pady=5)
-        self.status_entry = CTkEntry(self.inventory_window)
-        self.status_entry.insert(0, inventory_item[4])
-        self.status_entry.pack(pady=5)
-
-        CTkButton(self.inventory_window, text="Update Inventory", command=lambda: self.save_updated_inventory(i_id)).pack(pady=20)
-
-    def save_updated_inventory(self, i_id):
-        """Save the updated inventory item to the database"""
-        asset_id = int(self.asset_id_entry.get())
-        quantity = int(self.quantity_entry.get())
-        status = self.status_entry.get()
-
-        try:
-            cursor = self.db_connection.cursor()
-            cursor.execute("""
-                UPDATE INVENTORY SET a_id = %s, i_qty = %s, status = %s 
-                WHERE i_id = %s
-            """, (asset_id, quantity, status, i_id))
-            self.db_connection.commit()
-            messagebox.showinfo("Success", "Inventory updated successfully!")
-            self.inventory_window.destroy()
-            self.display_inventory()
-        except Error as e:
-            messagebox.showerror("Database Error", f"Error updating inventory: {e}")
-
-    def delete_inventory(self, i_id):
-        """Delete an inventory item"""
-        if messagebox.askyesno("Confirm Delete", "Are you sure you want to delete this inventory item?"):
-            try:
-                cursor = self.db_connection.cursor()
-                cursor.execute("DELETE FROM INVENTORY WHERE i_id = %s", (i_id,))
-                self.db_connection.commit()
-                messagebox.showinfo("Success", "Inventory item deleted successfully!")
-                self.display_inventory()
-            except Error as e:
-                messagebox.showerror("Database Error", f"Error deleting inventory item: {e}")
-
-    def display_assets(self):
-        """Display assets in a table format"""
-        # Clear previous asset display
-        self.asset_table.destroy()
-
-        self.asset_table = CTkFrame(self.content_frame)
-        self.asset_table.pack(fill="x", expand=True)
-
-        # Table headers
-        headers = ["Asset ID", "Asset Name", "Asset Type", "Category", "Quantity", "Market Price", "Actions"]
-        for header in headers:
-            header_label = CTkLabel(self.asset_table, text=header, font=CTkFont(size=14, weight="bold"))
-            header_label.grid(row=0, column=headers.index(header), padx=10, pady=5)
-
-        # Fetch and display assets from the database
-        try:
-            cursor = self.db_connection.cursor()
-            cursor.execute("SELECT * FROM ASSETS")
-            assets = cursor.fetchall()
-
-            for asset in assets:
-                for value in asset[:-1]:  # Exclude last_updated column from display
-                    asset_label = CTkLabel(self.asset_table, text=str(value))
-                    asset_label.grid(row=assets.index(asset) + 1, column=asset.index(value), padx=10, pady=5)
-
-                # Add action buttons for updating and deleting
-                update_button = CTkButton(self.asset_table, text="Update", command=lambda a_id=asset[0]: self.update_asset(a_id))
-                update_button.grid(row=assets.index(asset) + 1, column=len(asset)-1, padx=10, pady=5)
-
-                delete_button = CTkButton(self.asset_table, text="Delete", command=lambda a_id=asset[0]: self.delete_asset(a_id))
-                delete_button.grid(row=assets.index(asset) + 1, column=len(asset), padx=10, pady=5)
-
-        except Error as e:
-            messagebox.showerror("Database Error", f"Error fetching assets: {e}")
-
-    def clear_content_frame(self):
-        """Clear the content frame for new displays"""
-        for widget in self.content_frame.winfo_children():
-            widget.destroy()
-
-    def run(self):
-        self.app.mainloop()
-
-# Initialize and run the application
 if __name__ == "__main__":
-    app = StockManagementApp()
-    app.run()
+    StockManagementApp()

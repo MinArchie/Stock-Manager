@@ -15,7 +15,7 @@ try:
     db_connection = mysql.connector.connect(
         host='localhost',
         user='root',
-        password='Swathi1015!',  # Your actual root password here
+        password='****',  # Your actual root password here
         database='StockManagementDB'
     )
     if db_connection.is_connected():
@@ -43,11 +43,9 @@ class StockManagementApp:
         
         self.table_data = []
         
-        # Create main content frame that will hold everything
         self.main_content_frame = CTkFrame(self.app)
         self.main_content_frame.pack(fill="both", expand=True)
         
-        # Initialize sidebar as None
         self.sidebar = None
         self.content_frame = None
         
@@ -65,30 +63,25 @@ class StockManagementApp:
         self.app.destroy()
 
     def clear_main_content(self):
-        """Clear all widgets from the main content frame"""
         for widget in self.main_content_frame.winfo_children():
             widget.destroy()
 
     def login_view(self):
         self.clear_main_content()
         
-        # Create frame for login content
         self.frame = CTkFrame(master=self.main_content_frame, width=506, height=645, fg_color="#ffffff")
         self.frame.pack_propagate(0)
         self.frame.pack(side="right", fill="both", expand=True)
 
-        # Load and display side image
         side_img_data = Image.open(r"project\shopping-cart-with-bag.jpg")
         self.side_img = CTkImage(dark_image=side_img_data, light_image=side_img_data, size=(400, 645))
         self.image_label = CTkLabel(master=self.main_content_frame, text="", image=self.side_img)
         self.image_label.pack(expand=False, side="left")
 
-        # Fonts
         h1_font = CTkFont(family="Helvetica", size=34, weight="bold")
         h1_font_italics = CTkFont(family="Helvetica", size=23, weight="bold", slant="italic")
         h2_font = CTkFont(family="Arial Bold", size=17, weight="bold")
 
-        # Login form content
         CTkLabel(master=self.frame, text="Sign In", text_color="#D75B36", anchor="w", font=h1_font).pack(anchor="w", pady=(120, 0), padx=(65, 0))
         CTkLabel(master=self.frame, text="Stock Management Application", text_color="#636E79", anchor="w", font=h1_font_italics).pack(anchor="w", pady=(15, 0), padx=(65, 0))
 
@@ -105,18 +98,14 @@ class StockManagementApp:
     def homepage(self):
         self.clear_main_content()
         
-        # Create a container frame for sidebar and content
         self.container_frame = CTkFrame(self.main_content_frame)
         self.container_frame.pack(fill="both", expand=True)
         
-        # Create sidebar
         self.create_sidebar()
         
-        # Create content frame
         self.content_frame = CTkFrame(self.container_frame)
         self.content_frame.pack(side="left", fill="both", expand=True, padx=20, pady=20)
         
-        # Show initial dashboard content
         self.show_dashboard()
 
     def create_sidebar(self):
@@ -125,7 +114,6 @@ class StockManagementApp:
         self.sidebar.pack(side="left", fill="y")
         self.sidebar.pack_propagate(False)
 
-        # Sidebar logo and buttons
         logo_label = CTkLabel(self.sidebar, text="Stock Management System", 
                             font=CTkFont(size=20, weight="bold"),
                             wraplength=180)
@@ -197,7 +185,6 @@ class StockManagementApp:
         ).pack(pady=20)
 
     def logout(self):
-        """Properly handle logout by clearing everything and showing login view"""
         self.clear_main_content()
         self.login_view()
 
@@ -210,12 +197,10 @@ class StockManagementApp:
             messagebox.showerror("Login Failed", "Invalid email or password. Please try again.")
 
     def create_assets_header(self):
-        """Create the assets header and stats section."""
         assets_label = CTkLabel(self.content_frame, text="Assets", 
                               font=CTkFont(size=24, weight="bold"))
         assets_label.pack(pady=(0, 20))
 
-        # Create a frame for stats
         stats_frame = CTkFrame(self.content_frame)
         stats_frame.pack(fill="x", pady=(0, 20))
 
@@ -233,34 +218,27 @@ class StockManagementApp:
         self.table_frame = CTkFrame(self.content_frame)
         self.table_frame.pack(fill="both", expand=True)
 
-        # Clear existing widgets to avoid duplication
         for widget in self.table_frame.winfo_children():
             widget.destroy()
 
-        # Fetch assets and column names from database
         self.refresh_assets()
 
     def refresh_assets(self):
-        """Fetch assets from the database and display in the assets table."""
         global db_cursor
         self.clear_assets_table()
 
         try:
-            # Execute query to fetch all columns and rows
             db_cursor.execute("SELECT * FROM Assets")
             column_names = [desc[0] for desc in db_cursor.description]
             print(column_names)
-            # Display column headers in the first row
             for col_index, col_name in enumerate(column_names):
                 header_label = CTkLabel(
                     self.table_frame, text=col_name, font=("Arial", 12, "bold")
                 )
                 header_label.grid(row=0, column=col_index, padx=10, pady=5, sticky="nsew")
 
-            # Fetch all rows from the result
             self.table_data = db_cursor.fetchall()
 
-            # Display each row starting from the second row
             for row_index, row in enumerate(self.table_data, start=1):
                 for col_index, value in enumerate(row):
                     if isinstance(value, float):
@@ -295,7 +273,6 @@ class StockManagementApp:
             messagebox.showerror("Database Error", f"Error fetching assets: {e}")
 
     def clear_assets_table(self):
-        """Clear all widgets from the assets table frame."""
         for widget in self.table_frame.winfo_children():
             widget.destroy()
 
@@ -313,15 +290,12 @@ class StockManagementApp:
 
 
     def update_asset(self, asset_id):
-        """Open the asset dialog for updating an existing asset"""
         global db_cursor
         try:
-            # Fetch the current asset data
             db_cursor.execute("SELECT * FROM Assets WHERE a_id = %s", (asset_id,))
             asset_data = db_cursor.fetchone()
             
             if asset_data:
-                # Create the dialog with existing data
                 self.asset_dialog = CTkToplevel(self.app)
                 self.asset_dialog.title("Update Asset")
                 self.asset_dialog.geometry("400x450")
@@ -334,50 +308,48 @@ class StockManagementApp:
                 right_frame = CTkFrame(self.asset_dialog)
                 right_frame.pack(side="right", padx=20, pady=20)
 
-                # Create and populate entry fields
                 CTkLabel(left_frame, text="Asset Name:").pack(pady=5)
                 self.asset_name_entry = CTkEntry(left_frame)
-                self.asset_name_entry.insert(0, asset_data[1])  # a_name
+                self.asset_name_entry.insert(0, asset_data[1])
                 self.asset_name_entry.pack(pady=5)
 
                 CTkLabel(right_frame, text="Asset Type:").pack(pady=5)
                 self.asset_type_entry = CTkEntry(right_frame)
-                self.asset_type_entry.insert(0, asset_data[2])  # a_type
+                self.asset_type_entry.insert(0, asset_data[2])
                 self.asset_type_entry.pack(pady=5)
 
                 CTkLabel(left_frame, text="Category:").pack(pady=5)
                 self.category_entry = CTkEntry(left_frame)
-                self.category_entry.insert(0, asset_data[3])  # category
+                self.category_entry.insert(0, asset_data[3])
                 self.category_entry.pack(pady=5)
 
                 CTkLabel(right_frame, text="Quantity:").pack(pady=5)
                 self.quantity_entry = CTkEntry(right_frame)
-                self.quantity_entry.insert(0, str(asset_data[4]))  # a_qty
+                self.quantity_entry.insert(0, str(asset_data[4]))
                 self.quantity_entry.pack(pady=5)
 
                 CTkLabel(left_frame, text="Market Price:").pack(pady=5)
                 self.market_price_entry = CTkEntry(left_frame)
-                self.market_price_entry.insert(0, str(asset_data[5]))  # market_price
+                self.market_price_entry.insert(0, str(asset_data[5]))
                 self.market_price_entry.pack(pady=5)
 
                 CTkLabel(right_frame, text="Purchase Cost:").pack(pady=5)
                 self.purchase_cost_entry = CTkEntry(right_frame)
-                if asset_data[6]:  # a_purchasecost
+                if asset_data[6]:
                     self.purchase_cost_entry.insert(0, str(asset_data[6]))
                 self.purchase_cost_entry.pack(pady=5)
 
                 CTkLabel(left_frame, text="Status:").pack(pady=5)
                 self.status_entry = CTkEntry(left_frame)
-                self.status_entry.insert(0, asset_data[7])  # asset_status
+                self.status_entry.insert(0, asset_data[7])
                 self.status_entry.pack(pady=5)
 
                 CTkLabel(right_frame, text="Description:").pack(pady=5)
                 self.description_entry = CTkEntry(right_frame)
-                if asset_data[9]:  # a_description
+                if asset_data[9]:
                     self.description_entry.insert(0, asset_data[9])
                 self.description_entry.pack(pady=5)
 
-                # Update button
                 CTkButton(
                     left_frame, 
                     text="Update Asset", 
@@ -473,12 +445,10 @@ class StockManagementApp:
         self.status_entry = CTkEntry(left_frame)
         self.status_entry.pack(pady=5)
 
-        # Add more fields as required
         CTkLabel(right_frame, text="Description:").pack(pady=5)
         self.description_entry = CTkEntry(right_frame)
         self.description_entry.pack(pady=5)
 
-        # Add button to submit the form
         CTkButton(left_frame, text="Add Asset", command=self.submit_asset).pack(pady=20)
 
     def submit_asset(self):
@@ -513,8 +483,6 @@ class StockManagementApp:
                 messagebox.showerror("Error", "Failed to add new asset.")
         else:
             messagebox.showwarning("Input Error", "All fields must be filled out correctly.")
-
-
 
 
 if __name__ == "__main__":

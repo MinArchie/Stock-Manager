@@ -16,7 +16,7 @@ try:
     db_connection = mysql.connector.connect(
         host='localhost',
         user='root',
-        password='Swathi1015!',  # Your actual root password here
+        password='****',  # Your actual root password here
         database='StockManagementDB'
     )
     if db_connection.is_connected():

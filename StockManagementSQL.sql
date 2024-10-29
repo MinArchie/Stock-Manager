@@ -8,8 +8,8 @@
 					  'Trademarks', 'Patents', 'Intellectual Property', 'Goodwill', 
 					  'Franchises', 'Cash Equivalents') NOT NULL,
 		a_qty INT DEFAULT 0 ,
-		market_price DECIMAL(15,5) NOT NULL,
-		a_purchasecost DECIMAL(15,5),
+		market_price DECIMAL(15,2) NOT NULL,
+		a_purchasecost DECIMAL(15,2),
 		asset_status ENUM('Active', 'In Repair', 'Decommissioned') DEFAULT 'Active',
 		 last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 		a_description TEXT);
@@ -29,9 +29,9 @@
 	FOREIGN KEY (a_id) REFERENCES ASSETS(a_id) ON DELETE CASCADE,
 	 movement_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	 status ENUM('In', 'Out') NOT NULL,
-	 acquired_price DECIMAL(15,5),                
-		market_value DECIMAL(15,5),                  
-		profit_loss DECIMAL(15,5) AS (
+	 acquired_price DECIMAL(15,2),                
+		market_value DECIMAL(15,2),                  
+		profit_loss DECIMAL(15,2) AS (
 			CASE
 				WHEN status = 'Out' THEN (market_value - acquired_price) * i_qty
 				ELSE NULL

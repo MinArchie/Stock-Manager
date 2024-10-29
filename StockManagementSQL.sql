@@ -15,7 +15,12 @@
 		a_description TEXT);
 	INSERT INTO ASSETS (a_id ,a_name, a_type ,category ,market_price ,a_purchasecost ,asset_status ,last_updated ,a_description )VALUES 
 	(1,'Laptop', 'Tangible', 'Equipment',1200.00, 60000.00, 'Active', CURRENT_TIMESTAMP, 'HP Pavilion 15 ');
+	
+    UPDATE ASSETS 
+	SET a_qty = 10 
+	WHERE a_id = 1;
 
+	
 
 	CREATE TABLE INVENTORY (
 	i_id INT PRIMARY KEY AUTO_INCREMENT,

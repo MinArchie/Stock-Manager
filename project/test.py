@@ -8,7 +8,6 @@ from mysql.connector import Error
 ADMIN_EMAIL = ""
 ADMIN_PASSWORD = ""
 
-# Global database connection and cursor
 db_connection = None
 db_cursor = None
 
@@ -16,7 +15,7 @@ try:
     db_connection = mysql.connector.connect(
         host='localhost',
         user='root',
-        password='****',  # Your actual root password here
+        password='Swathi1015!',  # Your actual root password here
         database='StockManagementDB'
     )
     if db_connection.is_connected():
@@ -135,8 +134,8 @@ class StockManagementApp:
         buttons = [
             ("Dashboard", self.show_dashboard),
             ("Assets", self.show_assets),
-            ("Returns", self.show_returns),
-            ("Settings", self.show_settings),
+            ("Inventory", self.show_inventory),
+            ("Information", self.show_information),
             ("Account", self.show_account)
         ]
         
@@ -168,18 +167,18 @@ class StockManagementApp:
         self.create_assets_header()
         self.create_assets_table()
 
-    def show_returns(self):
+    def show_inventory(self):
         self.clear_content_frame()
-        CTkLabel(self.content_frame, text="Returns", 
+        CTkLabel(self.content_frame, text="Inventory", 
                 font=CTkFont(size=24, weight="bold")).pack(pady=(0, 20))
-        CTkLabel(self.content_frame, text="Manage returns for your stock."
+        CTkLabel(self.content_frame, text="Manage inventory for your stock."
                 ).pack(pady=10)
 
-    def show_settings(self):
+    def show_information(self):
         self.clear_content_frame()
-        CTkLabel(self.content_frame, text="Settings", 
+        CTkLabel(self.content_frame, text="Information", 
                 font=CTkFont(size=24, weight="bold")).pack(pady=(0, 20))
-        CTkLabel(self.content_frame, text="Configure your stock management settings."
+        CTkLabel(self.content_frame, text="Gain insignts your stock management tables. Can see Right Join, Left Join, Inner Join."
                 ).pack(pady=10)
 
     def show_account(self):
@@ -266,7 +265,7 @@ class StockManagementApp:
                 for col_index, value in enumerate(row):
                     if isinstance(value, float):
                         value = f"{value:.2f}"
-                    elif isinstance(value, str) and value.isdigit():  # if it's a string but is a digit
+                    elif isinstance(value, str) and value.isdigit():
                         value = str(int(value))
                     label = CTkLabel(self.table_frame, text=value)
                     label.grid(row=row_index, column=col_index, padx=10, pady=5, sticky="nsew")
@@ -280,6 +279,16 @@ class StockManagementApp:
                     font=("Arial", 14, "bold")
                 )
                 delete_button.grid(row=row_index, column=len(column_names), padx=10, pady=5, sticky="nsew")
+                edit_button = CTkButton(
+                    self.table_frame,
+                    text="✎",
+                    command=lambda asset_id=row[0]: self.update_asset(asset_id),
+                    width=20,
+                    fg_color="green",
+                    text_color="white",
+                    font=("Arial", 20, "bold")
+                )
+                edit_button.grid(row=row_index, column=len(column_names)+1, padx=15, pady=5, sticky="nsew")
 
         except Error as e:
             print(f"Error: {e}")
@@ -301,6 +310,126 @@ class StockManagementApp:
         except Error as e:
             print(f"Error: {e}")
             messagebox.showerror("Database Error", f"Error deleting asset: {e}")
+
+
+    def update_asset(self, asset_id):
+        """Open the asset dialog for updating an existing asset"""
+        global db_cursor
+        try:
+            # Fetch the current asset data
+            db_cursor.execute("SELECT * FROM Assets WHERE a_id = %s", (asset_id,))
+            asset_data = db_cursor.fetchone()
+            
+            if asset_data:
+                # Create the dialog with existing data
+                self.asset_dialog = CTkToplevel(self.app)
+                self.asset_dialog.title("Update Asset")
+                self.asset_dialog.geometry("400x450")
+
+                self.asset_dialog.grab_set()
+
+                left_frame = CTkFrame(self.asset_dialog)
+                left_frame.pack(side="left", padx=20, pady=20)
+
+                right_frame = CTkFrame(self.asset_dialog)
+                right_frame.pack(side="right", padx=20, pady=20)
+
+                # Create and populate entry fields
+                CTkLabel(left_frame, text="Asset Name:").pack(pady=5)
+                self.asset_name_entry = CTkEntry(left_frame)
+                self.asset_name_entry.insert(0, asset_data[1])  # a_name
+                self.asset_name_entry.pack(pady=5)
+
+                CTkLabel(right_frame, text="Asset Type:").pack(pady=5)
+                self.asset_type_entry = CTkEntry(right_frame)
+                self.asset_type_entry.insert(0, asset_data[2])  # a_type
+                self.asset_type_entry.pack(pady=5)
+
+                CTkLabel(left_frame, text="Category:").pack(pady=5)
+                self.category_entry = CTkEntry(left_frame)
+                self.category_entry.insert(0, asset_data[3])  # category
+                self.category_entry.pack(pady=5)
+
+                CTkLabel(right_frame, text="Quantity:").pack(pady=5)
+                self.quantity_entry = CTkEntry(right_frame)
+                self.quantity_entry.insert(0, str(asset_data[4]))  # a_qty
+                self.quantity_entry.pack(pady=5)
+
+                CTkLabel(left_frame, text="Market Price:").pack(pady=5)
+                self.market_price_entry = CTkEntry(left_frame)
+                self.market_price_entry.insert(0, str(asset_data[5]))  # market_price
+                self.market_price_entry.pack(pady=5)
+
+                CTkLabel(right_frame, text="Purchase Cost:").pack(pady=5)
+                self.purchase_cost_entry = CTkEntry(right_frame)
+                if asset_data[6]:  # a_purchasecost
+                    self.purchase_cost_entry.insert(0, str(asset_data[6]))
+                self.purchase_cost_entry.pack(pady=5)
+
+                CTkLabel(left_frame, text="Status:").pack(pady=5)
+                self.status_entry = CTkEntry(left_frame)
+                self.status_entry.insert(0, asset_data[7])  # asset_status
+                self.status_entry.pack(pady=5)
+
+                CTkLabel(right_frame, text="Description:").pack(pady=5)
+                self.description_entry = CTkEntry(right_frame)
+                if asset_data[9]:  # a_description
+                    self.description_entry.insert(0, asset_data[9])
+                self.description_entry.pack(pady=5)
+
+                # Update button
+                CTkButton(
+                    left_frame, 
+                    text="Update Asset", 
+                    command=lambda: self.submit_asset_update(asset_id)
+                ).pack(pady=20)
+
+        except Error as e:
+            print(f"Error: {e}")
+            messagebox.showerror("Database Error", f"Error fetching asset data: {e}")
+
+    def submit_asset_update(self, asset_id):
+        """Submit the updated asset information to the database."""
+        global db_connection, db_cursor
+        
+        asset_name = self.asset_name_entry.get()
+        asset_type = self.asset_type_entry.get()
+        category = self.category_entry.get()
+        qty = self.quantity_entry.get()
+        market_price = self.market_price_entry.get()
+        purchase_cost = self.purchase_cost_entry.get()
+        status = self.status_entry.get()
+        description = self.description_entry.get()
+
+        if asset_name and status and asset_type in ['Tangible', 'Intangible'] and category in ['Buildings', 'Machinery', 'Cash', 'Inventory', 'Equipment', 'Vehicles', 'Furniture', 'Valuable Antiques', 'Copyrights', 'Brand Recognition', 'Trademarks', 'Patents', 'Intellectual Property', 'Goodwill', 'Franchises', 'Cash Equivalents']:
+            try:
+                qty = int(qty)
+                market_price = float(market_price)
+                purchase_cost = float(purchase_cost) if purchase_cost else None
+
+                db_cursor.execute("""
+                    UPDATE Assets 
+                    SET a_name = %s, 
+                        a_type = %s,
+                        category = %s,
+                        a_qty = %s,
+                        market_price = %s,
+                        a_purchasecost = %s,
+                        asset_status = %s,
+                        a_description = %s
+                    WHERE a_id = %s
+                """, (asset_name, asset_type, category, qty, market_price, 
+                    purchase_cost, status, description, asset_id))
+                
+                db_connection.commit()
+                messagebox.showinfo("Success", "Asset updated successfully!")
+                self.asset_dialog.destroy()
+                self.refresh_assets()
+            except Error as e:
+                print(f"Error: {e}")
+                messagebox.showerror("Error", "Failed to update asset.")
+        else:
+            messagebox.showwarning("Input Error", "Could Not Find Asset Information")
 
 
     def add_new_asset(self):

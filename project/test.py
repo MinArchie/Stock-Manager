@@ -15,7 +15,7 @@ try:
     db_connection = mysql.connector.connect(
         host='localhost',
         user='root',
-        password='*****',  # Your actual root password here
+        password='******',  # Your actual root password here
         database='StockManagementDB'
     )
     if db_connection.is_connected():
@@ -36,7 +36,6 @@ class StockManagementApp:
         self.app.geometry("1250x645")
         self.app.resizable(0, 0)
 
-        # Ensure database connection is closed when app is closed
         self.app.protocol("WM_DELETE_WINDOW", self.on_closing)
 
         set_appearance_mode("dark")
@@ -123,7 +122,7 @@ class StockManagementApp:
             ("Dashboard", self.show_dashboard),
             ("Assets", self.show_assets),
             ("Inventory", self.show_inventory),
-            ("Information", self.show_information),
+            ("Asset Movement", self.show_asset_movement),
             ("Account", self.show_account)
         ]
         
@@ -160,12 +159,9 @@ class StockManagementApp:
         self.create_inventory_header()
         self.create_inventory_table()
 
-    def show_information(self):
+    def show_asset_movement(self):
         self.clear_content_frame()
-        CTkLabel(self.content_frame, text="Information", 
-                font=CTkFont(size=24, weight="bold")).pack(pady=(0, 20))
-        CTkLabel(self.content_frame, text="Gain insignts your stock management tables. Can see Right Join, Left Join, Inner Join."
-                ).pack(pady=10)
+        self.show_asset_inventory_details()
 
     def show_account(self):
         self.clear_content_frame()
@@ -193,6 +189,50 @@ class StockManagementApp:
             self.homepage()
         else:
             messagebox.showerror("Login Failed", "Invalid email or password. Please try again.")
+
+    
+    def show_asset_inventory_details(self):
+        self.clear_content_frame()
+
+        header = CTkLabel(self.content_frame, text="Asset Inventory Details", font=CTkFont(size=24, weight="bold"))
+        header.pack(pady=(0, 20))
+
+        table_frame = CTkFrame(self.content_frame)
+        table_frame.pack(fill="both", expand=True)
+
+        try:
+            query = """
+            SELECT ASSETS.a_id, ASSETS.a_name, ASSETS.a_qty, ASSETS.asset_status, INVENTORY.i_qty, INVENTORY.movement_date,
+                INVENTORY.status, INVENTORY.acquired_price, INVENTORY.market_value, INVENTORY.profit_loss, INVENTORY.remarks
+            FROM ASSETS
+            LEFT JOIN INVENTORY ON ASSETS.a_id = INVENTORY.a_id
+            ORDER BY ASSETS.a_id, INVENTORY.movement_date DESC;
+            """
+            db_cursor.execute(query)
+            rows = db_cursor.fetchall()
+            
+            column_names = ["Asset ID", "Name",  "Quantity", "Status", "Inventory Qty", "Movement Date",
+                            "I/O Status", "Acquired Price", "Market Value", "Profit/Loss", "Remarks"]
+            
+            for col_index, col_name in enumerate(column_names):
+                header_label = CTkLabel(table_frame, text=col_name, font=("Arial", 12, "bold"))
+                header_label.grid(row=0, column=col_index, padx=5, pady=5, sticky="nsew")
+            
+            for row_index, row in enumerate(rows, start=1):
+                for col_index, value in enumerate(row):
+                    if isinstance(value, float):
+                        value = f"{value:.2f}"
+                    elif isinstance(value, str) and value.isdigit():
+                        value = str(int(value))
+                    label = CTkLabel(table_frame, text=value)
+                    label.grid(row=row_index, column=col_index, padx=5, pady=5, sticky="nsew")
+
+
+        except Error as e:
+            print(f"Error: {e}")
+            messagebox.showerror("Database Error", f"Error fetching asset-inventory details: {e}")
+
+
 
     def create_assets_header(self):
         assets_label = CTkLabel(self.content_frame, text="Assets", 

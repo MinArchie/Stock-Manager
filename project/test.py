@@ -15,7 +15,7 @@ try:
     db_connection = mysql.connector.connect(
         host='localhost',
         user='root',
-        password='****',  # Your actual root password here
+        password='*****',  # Your actual root password here
         database='StockManagementDB'
     )
     if db_connection.is_connected():
@@ -33,7 +33,7 @@ class StockManagementApp:
         print("App starting...")
         self.app = CTk()
         print("App created...")
-        self.app.geometry("1200x645")
+        self.app.geometry("1250x645")
         self.app.resizable(0, 0)
 
         # Ensure database connection is closed when app is closed
@@ -157,10 +157,8 @@ class StockManagementApp:
 
     def show_inventory(self):
         self.clear_content_frame()
-        CTkLabel(self.content_frame, text="Inventory", 
-                font=CTkFont(size=24, weight="bold")).pack(pady=(0, 20))
-        CTkLabel(self.content_frame, text="Manage inventory for your stock."
-                ).pack(pady=10)
+        self.create_inventory_header()
+        self.create_inventory_table()
 
     def show_information(self):
         self.clear_content_frame()
@@ -481,6 +479,279 @@ class StockManagementApp:
             except Error as e:
                 print(f"Error: {e}")
                 messagebox.showerror("Error", "Failed to add new asset.")
+        else:
+            messagebox.showwarning("Input Error", "All fields must be filled out correctly.")
+
+
+    def create_inventory_header(self):
+        inventory_label = CTkLabel(self.content_frame, text="Inventory", 
+                              font=CTkFont(size=24, weight="bold"))
+        inventory_label.pack(pady=(0, 20))
+
+        stats_frame = CTkFrame(self.content_frame)
+        stats_frame.pack(fill="x", pady=(0, 20))
+        # come back and fix
+        stats = {"Assets\n123": 0, "Shipping\n91": 1, "Delivered\n23": 2}
+        for text in stats.keys():
+            stat_label = CTkLabel(stats_frame, text=text, 
+                                font=CTkFont(size=16))
+            stat_label.pack(side="left", expand=True, pady=5)
+
+        CTkButton(self.content_frame, text="+ Add Inventory", 
+                 width=100, command=self.add_new_inventory).pack(pady=(0, 20))
+
+    def create_inventory_table(self):
+        self.table_frame = CTkFrame(self.content_frame)
+        self.table_frame.pack(fill="both", expand=True)
+
+        for widget in self.table_frame.winfo_children():
+            widget.destroy()
+
+        self.refresh_inventory()
+
+    def refresh_inventory(self):
+        global db_cursor
+        self.clear_inventory_table()
+
+        try:
+            db_cursor.execute("SELECT * FROM Inventory")
+            column_names = [desc[0] for desc in db_cursor.description]
+            print(column_names)
+            for col_index, col_name in enumerate(column_names):
+                header_label = CTkLabel(
+                    self.table_frame, text=col_name, font=("Arial", 12, "bold")
+                )
+                header_label.grid(row=0, column=col_index, padx=10, pady=5, sticky="nsew")
+
+            self.table_data = db_cursor.fetchall()
+
+            for row_index, row in enumerate(self.table_data, start=1):
+                for col_index, value in enumerate(row):
+                    if isinstance(value, float):
+                        value = f"{value:.2f}"
+                    elif isinstance(value, str) and value.isdigit():
+                        value = str(int(value))
+                    label = CTkLabel(self.table_frame, text=value)
+                    label.grid(row=row_index, column=col_index, padx=10, pady=5, sticky="nsew")
+                delete_button = CTkButton(
+                    self.table_frame,
+                    text="-",
+                    command=lambda inventory_id=row[0]: self.delete_inventory(inventory_id),
+                    width=30,
+                    fg_color="red",
+                    text_color="white",
+                    font=("Arial", 14, "bold")
+                )
+                delete_button.grid(row=row_index, column=len(column_names), padx=10, pady=5, sticky="nsew")
+                edit_button = CTkButton(
+                    self.table_frame,
+                    text="✎",
+                    command=lambda inventory_id=row[0]: self.update_inventory(inventory_id),
+                    width=20,
+                    fg_color="green",
+                    text_color="white",
+                    font=("Arial", 20, "bold")
+                )
+                edit_button.grid(row=row_index, column=len(column_names)+1, padx=15, pady=5, sticky="nsew")
+
+        except Error as e:
+            print(f"Error: {e}")
+            messagebox.showerror("Database Error", f"Error fetching inventory item: {e}")
+
+    def clear_inventory_table(self):
+        for widget in self.table_frame.winfo_children():
+            widget.destroy()
+
+
+    def delete_inventory(self, inventory_id):
+        global db_cursor
+        try:
+            db_cursor.execute("DELETE FROM inventory WHERE i_id = %s", (inventory_id,))
+            db_connection.commit()
+            messagebox.showinfo("Success", "Inventory item deleted successfully.")
+            self.refresh_inventory()
+        except Error as e:
+            print(f"Error: {e}")
+            messagebox.showerror("Database Error", f"Error deleting Inventory Item: {e}")
+
+
+    def update_inventory(self, inventory_id):
+        global db_cursor
+        try:
+            db_cursor.execute("SELECT * FROM inventory WHERE i_id = %s", (inventory_id,))
+            inventory_data = db_cursor.fetchone()
+            
+            if inventory_data:
+                self.inventory_dialog = CTkToplevel(self.app)
+                self.inventory_dialog.title("Update Inventory")
+                self.inventory_dialog.geometry("400x450")
+
+                self.inventory_dialog.grab_set()
+
+                left_frame = CTkFrame(self.inventory_dialog)
+                left_frame.pack(side="left", padx=20, pady=20)
+
+                right_frame = CTkFrame(self.inventory_dialog)
+                right_frame.pack(side="right", padx=20, pady=20)
+
+                CTkLabel(left_frame, text="Asset ID:").pack(pady=5)
+                self.inventory_aid_entry = CTkEntry(left_frame)
+                self.inventory_aid_entry.insert(0, inventory_data[2])
+                self.inventory_aid_entry.pack(pady=5)
+
+                CTkLabel(right_frame, text="Invetory Qty:").pack(pady=5)
+                self.inventory_qty_entry = CTkEntry(right_frame)
+                self.inventory_qty_entry.insert(0, inventory_data[1])
+                self.inventory_qty_entry.pack(pady=5)
+
+                CTkLabel(left_frame, text="Movement Date:").pack(pady=5)
+                self.movement_date_entry = CTkEntry(left_frame)
+                self.movement_date_entry.insert(0, inventory_data[3])
+                self.movement_date_entry.pack(pady=5)
+
+                CTkLabel(right_frame, text="Status (In/Out):").pack(pady=5)
+                self.inventory_status_entry = CTkEntry(right_frame)
+                self.inventory_status_entry.insert(0, str(inventory_data[4]))
+                self.inventory_status_entry.pack(pady=5)
+
+                CTkLabel(left_frame, text="Acquired Price: ").pack(pady=5)
+                self.acq_price_entry = CTkEntry(left_frame)
+                self.acq_price_entry.insert(0, str(inventory_data[5]))
+                self.acq_price_entry.pack(pady=5)
+
+                CTkLabel(right_frame, text="Market Value:").pack(pady=5)
+                self.market_value_entry = CTkEntry(right_frame)
+                if inventory_data[6]:
+                    self.market_value_entry.insert(0, str(inventory_data[6]))
+                self.market_value_entry.pack(pady=5)
+
+                CTkLabel(left_frame, text="Remarks:").pack(pady=5)
+                self.remarks_entry = CTkEntry(left_frame)
+                if inventory_data[8]:
+                    self.remarks_entry.insert(0, inventory_data[8])
+                self.remarks_entry.pack(pady=5)
+
+                CTkButton(
+                    right_frame, 
+                    text="Update Inventory", 
+                    command=lambda: self.submit_inventory_update(inventory_id)
+                ).pack(pady=20)
+
+        except Error as e:
+            print(f"Error: {e}")
+            messagebox.showerror("Database Error", f"Error fetching Inventory data: {e}")
+
+    def submit_inventory_update(self, inventory_id):
+        global db_connection, db_cursor
+        
+        inventory_aid = self.inventory_aid_entry.get()
+        inventory_qty = self.inventory_qty_entry.get()
+        movement_date = self.movement_date_entry.get()
+        inventory_status = self.inventory_status_entry.get()
+        acq_price = self.acq_price_entry.get()
+        market_value = self.market_value_entry.get()
+        remarks = self.remarks_entry.get()
+
+        if inventory_aid and inventory_status in ['In', 'Out']:
+            try:
+                inventory_qty = int(inventory_qty)
+                market_value = float(market_value)
+                acq_price = float(acq_price)
+
+                db_cursor.execute("""
+                    UPDATE Inventory 
+                    SET i_qty = %s, 
+                        a_id = %s,
+                        movement_date = %s,
+                        status = %s,
+                        acquired_price = %s,
+                        market_value = %s,
+                        remarks = %s
+                    WHERE i_id = %s
+                """, (inventory_qty, inventory_aid, movement_date, inventory_status, acq_price, market_value, remarks, inventory_id))
+                
+                db_connection.commit()
+                messagebox.showinfo("Success", "Inventory updated successfully!")
+                self.inventory_dialog.destroy()
+                self.refresh_inventory()
+            except Error as e:
+                print(f"Error: {e}")
+                messagebox.showerror("Error", "Failed to update inventory.")
+        else:
+            messagebox.showwarning("Input Error", "Could Not Find Inventory Information")
+
+
+    def add_new_inventory(self):
+        self.inventory_dialog = CTkToplevel(self.app)
+        self.inventory_dialog.title("Add New Item to Inventory")
+        self.inventory_dialog.geometry("400x450")
+
+        self.inventory_dialog.grab_set()
+
+        left_frame = CTkFrame(self.inventory_dialog)
+        left_frame.pack(side="left", padx=20, pady=20)
+
+        right_frame = CTkFrame(self.inventory_dialog)
+        right_frame.pack(side="right", padx=20, pady=20)
+
+        CTkLabel(left_frame, text="Asset ID:").pack(pady=5)
+        self.inventory_aid_entry = CTkEntry(left_frame)
+        self.inventory_aid_entry.pack(pady=5)
+
+        CTkLabel(right_frame, text="Invetory Qty:").pack(pady=5)
+        self.inventory_qty_entry = CTkEntry(right_frame)
+        self.inventory_qty_entry.pack(pady=5)
+
+        CTkLabel(left_frame, text="Movement Date:").pack(pady=5)
+        self.movement_date_entry = CTkEntry(left_frame)
+        self.movement_date_entry.pack(pady=5)
+
+        CTkLabel(right_frame, text="Status (In/Out):").pack(pady=5)
+        self.inventory_status_entry = CTkEntry(right_frame)
+        self.inventory_status_entry.pack(pady=5)
+
+        CTkLabel(left_frame, text="Acquired Price: ").pack(pady=5)
+        self.acq_price_entry = CTkEntry(left_frame)
+        self.acq_price_entry.pack(pady=5)
+
+        CTkLabel(right_frame, text="Market Value:").pack(pady=5)
+        self.market_value_entry = CTkEntry(right_frame)
+        self.market_value_entry.pack(pady=5)
+
+        CTkLabel(left_frame, text="Remarks:").pack(pady=5)
+        self.remarks_entry = CTkEntry(left_frame)
+        self.remarks_entry.pack(pady=5)
+
+        CTkButton(left_frame, text="Add Inventory", command=self.submit_inventory).pack(pady=20)
+
+    def submit_inventory(self):
+        global db_connection, db_cursor
+        
+        inventory_aid = self.inventory_aid_entry.get()
+        inventory_qty = self.inventory_qty_entry.get()
+        movement_date = self.movement_date_entry.get()
+        inventory_status = self.inventory_status_entry.get()
+        acq_price = self.acq_price_entry.get()
+        market_value = self.market_value_entry.get()
+        remarks = self.remarks_entry.get()
+
+        if inventory_aid and inventory_status in ['In', 'Out']:
+            try:
+                inventory_qty = int(inventory_qty)
+                market_value = float(market_value)
+                acq_price = float(acq_price)
+
+                db_cursor.execute(
+                    "INSERT INTO INVENTORY (i_qty, a_id, status, acquired_price, market_value, remarks) VALUES (%s, %s, %s, %s, %s, %s)",
+                    (inventory_qty, inventory_aid, inventory_status, acq_price, market_value, remarks)
+                )
+                db_connection.commit()
+                messagebox.showinfo("Success", "New Inventory Item added successfully!")
+                self.inventory_dialog.destroy()
+                self.refresh_inventory()
+            except Error as e:
+                print(f"Error: {e}")
+                messagebox.showerror("Error", "Failed to add new item to Inventory.")
         else:
             messagebox.showwarning("Input Error", "All fields must be filled out correctly.")
 

@@ -33,7 +33,7 @@
 		market_value DECIMAL(15,2),                  
 		profit_loss DECIMAL(15,2) AS (
 			CASE
-				WHEN status = 'Out' THEN (market_value - acquired_price) * i_qty
+				WHEN status = 'Out' THEN ROUND((market_value - acquired_price) * i_qty, 2)
 				ELSE NULL
 			END
 		) STORED,     
